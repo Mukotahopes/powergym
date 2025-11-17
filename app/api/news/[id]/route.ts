@@ -8,7 +8,9 @@ type Params = { params: { id: string } };
 export async function GET(_req: Request, { params }: Params) {
   await connectDB();
   const item = await News.findById(params.id);
-  if (!item) return NextResponse.json({ error: "Not found" }, { status: 404 });
+  if (!item) {
+    return NextResponse.json({ error: "Not found" }, { status: 404 });
+  }
   return NextResponse.json(item);
 }
 
@@ -17,14 +19,18 @@ export async function PATCH(req: Request, { params }: Params) {
   await connectDB();
   const data = await req.json();
   const updated = await News.findByIdAndUpdate(params.id, data, { new: true });
-  if (!updated) return NextResponse.json({ error: "Not found" }, { status: 404 });
+  if (!updated) {
+    return NextResponse.json({ error: "Not found" }, { status: 404 });
+  }
   return NextResponse.json(updated);
 }
 
 // DELETE /api/news/:id
 export async function DELETE(_req: Request, { params }: Params) {
   await connectDB();
-  const res = await News.findByIdAndDelete(params.id);
-  if (!res) return NextResponse.json({ error: "Not found" }, { status: 404 });
+  const deleted = await News.findByIdAndDelete(params.id);
+  if (!deleted) {
+    return NextResponse.json({ error: "Not found" }, { status: 404 });
+  }
   return NextResponse.json({ ok: true });
 }
