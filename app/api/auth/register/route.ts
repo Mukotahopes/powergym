@@ -6,7 +6,7 @@ export async function POST(request: Request) {
   await connectDB();
 
   const body = await request.json();
-  const { email, name, password, avatar } = body;
+  const { email, name, password } = body;
 
   if (!email || !password) {
     return NextResponse.json(
@@ -26,8 +26,7 @@ export async function POST(request: Request) {
   const user = await User.create({
     email,
     name,
-    password,
-    avatar: avatar || undefined, // якщо не вибрав — піде дефолт
+    password, // простий варіант для диплома
     role: "user",
   });
 
@@ -36,7 +35,6 @@ export async function POST(request: Request) {
     email: user.email,
     name: user.name,
     role: user.role,
-    avatar: user.avatar,
   };
 
   return NextResponse.json(safeUser, { status: 201 });
