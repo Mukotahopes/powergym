@@ -21,25 +21,14 @@ export default function AdminLayout({
   const router = useRouter();
 
   useEffect(() => {
-    // Проста перевірка ролі з localStorage
     if (typeof window === "undefined") return;
+    if (pathname === "/admin/login") return;
 
-    const stored = localStorage.getItem("powergymUser");
-    if (!stored) {
-      router.replace("/login");
-      return;
+    const isAdmin = localStorage.getItem("powergymAdmin") === "true";
+    if (!isAdmin) {
+      router.replace("/admin/login");
     }
-
-    try {
-      const user = JSON.parse(stored);
-      if (user.role !== "admin") {
-        router.replace("/");
-      }
-    } catch (e) {
-      console.error("Cannot parse powergymUser:", e);
-      router.replace("/login");
-    }
-  }, [router]);
+  }, [pathname, router]);
 
   return (
     <div className="min-h-screen flex bg-[#F4F7F6] text-black">
@@ -70,10 +59,6 @@ export default function AdminLayout({
             );
           })}
         </nav>
-
-        <div className="px-4 py-3 border-t border-white/10 text-[11px] text-white/50">
-          © {new Date().getFullYear()} PowerGYM
-        </div>
       </aside>
 
       {/* Main */}
