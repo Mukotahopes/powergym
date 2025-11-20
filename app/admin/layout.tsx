@@ -23,6 +23,9 @@ export default function AdminLayout({
 
   useEffect(() => {
     if (typeof window === "undefined") return;
+    if (pathname === "/admin/login") return;
+
+    const isAdmin = localStorage.getItem("powergymAdmin") === "true";
 
     const isAdmin = localStorage.getItem("powergymAdmin") === "true";
     if (pathname === "/admin/login") {
