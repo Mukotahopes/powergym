@@ -17,10 +17,11 @@ export async function POST(request: Request) {
   const user = (await User.findOne({ email }).lean()) as
     | {
         _id: string;
-        email: string;
-        name: string;
-        role: string;
-        password: string;
+      email: string;
+      name: string;
+      role: string;
+      password: string;
+      avatar?: string;
       }
     | null;
 
@@ -36,6 +37,7 @@ export async function POST(request: Request) {
     email: user.email,
     name: user.name,
     role: user.role,
+    avatar: user.avatar,
   };
 
   return NextResponse.json(safeUser, { status: 200 });

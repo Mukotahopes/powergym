@@ -18,7 +18,7 @@ type AppUser = {
   email: string;
   name?: string;
   role?: string;
-  avatar?: string; // на майбутнє, якщо додаси
+  avatar?: string; 
 };
 
 export default function Navbar() {

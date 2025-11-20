@@ -4,12 +4,23 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
+import Image from "next/image";
+
+const avatarPool = [
+  "/img/avatars/avatar1.png",
+  "/img/avatars/avatar2.png",
+  "/img/avatars/avatar3.png",
+  "/img/avatars/avatar4.png",
+];
 
 export default function RegisterPage() {
   const router = useRouter();
   const [email, setEmail] = useState("");
   const [name, setName] = useState("");
   const [password, setPassword] = useState("");
+  const [selectedAvatar, setSelectedAvatar] = useState<string>(
+    avatarPool[0] // дефолтна вибрана
+  );
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -22,7 +33,12 @@ export default function RegisterPage() {
       const res = await fetch("/api/auth/register", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, name, password }),
+        body: JSON.stringify({
+          email,
+          name,
+          password,
+          avatar: selectedAvatar,
+        }),
       });
 
       const data = await res.json();
@@ -32,7 +48,6 @@ export default function RegisterPage() {
         return;
       }
 
-      // зберігаємо користувача в localStorage
       localStorage.setItem("powergymUser", JSON.stringify(data));
 
       router.push("/profile");
@@ -92,6 +107,40 @@ export default function RegisterPage() {
             />
           </div>
 
+          {/* Вибір аватарки */}
+          <div>
+            <label className="block text-sm font-medium mb-2">
+              Обери аватар
+            </label>
+            <div className="grid grid-cols-4 gap-3">
+              {avatarPool.map((src) => {
+                const isActive = selectedAvatar === src;
+                return (
+                  <button
+                    type="button"
+                    key={src}
+                    onClick={() => setSelectedAvatar(src)}
+                    className={`relative h-16 w-16 overflow-hidden rounded-full border-2 transition ${
+                      isActive
+                        ? "border-primary shadow-lg"
+                        : "border-transparent opacity-80 hover:opacity-100"
+                    }`}
+                  >
+                    <Image
+                      src={src}
+                      alt="avatar"
+                      fill
+                      className="object-cover"
+                    />
+                  </button>
+                );
+              })}
+            </div>
+            <p className="mt-1 text-xs text-slate-500">
+              Ти зможеш змінити аватар у профілі пізніше.
+            </p>
+          </div>
+
           {error && (
             <p className="text-xs text-red-600 bg-red-50 rounded-lg px-3 py-2">
               {error}
@@ -105,17 +154,6 @@ export default function RegisterPage() {
           >
             {loading ? "Реєструю..." : "Зареєструватися"}
           </button>
-
-          <p className="text-xs text-center text-slate-600">
-            Вже є акаунт?{" "}
-            <button
-              type="button"
-              onClick={() => router.push("/login")}
-              className="text-primary underline"
-            >
-              Увійти
-            </button>
-          </p>
         </form>
       </div>
 
