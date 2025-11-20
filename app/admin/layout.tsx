@@ -9,6 +9,7 @@ const links = [
   { href: "/admin/trainers", label: "Тренери" },
   { href: "/admin/news", label: "Новини" },
   { href: "/admin/messages", label: "Повідомлення" },
+  { href: "/admin/clients", label: "Клієнти" },
   { href: "/admin/personal-trainings", label: "Персональні тренування" },
 ];
 
@@ -25,10 +26,7 @@ export default function AdminLayout({
     if (pathname === "/admin/login") return;
 
     const isAdmin = localStorage.getItem("powergymAdmin") === "true";
-    if (!isAdmin) {
-      router.replace("/admin/login");
-    }
-  }, [pathname, router]);
+
 
   return (
     <div className="min-h-screen flex bg-[#F4F7F6] text-black">

@@ -8,16 +8,34 @@ export default function AdminLoginPage() {
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
 
-  function handleSubmit(e: React.FormEvent) {
+  async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError(null);
 
-    if (login === "admin" && password === "admin") {
-      // простий варіант для адмін-доступу
+    try {
+      const response = await fetch("/api/auth/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: login, password }),
+      });
+
+      if (!response.ok) {
+        const data = await response.json();
+        setError(data?.error || "Невірний логін або пароль");
+        return;
+      }
+
+      const data = await response.json();
+
+      if (data?.role !== "admin") {
+        setError("Недостатньо прав для входу в адмін-кабінет");
+        return;
+      }
+
       localStorage.setItem("powergymAdmin", "true");
       router.push("/admin/news");
-    } else {
-      setError("Невірний логін або пароль");
+    } catch (err) {
+      setError("Сталася помилка. Спробуйте ще раз.");
     }
   }
 
@@ -38,7 +56,7 @@ export default function AdminLoginPage() {
             value={login}
             onChange={(e) => setLogin(e.target.value)}
             className="w-full rounded-lg border px-3 py-2 text-sm"
-            placeholder="admin"
+
           />
         </div>
 
