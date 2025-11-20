@@ -25,17 +25,15 @@ export default function AdminLayout({
     if (typeof window === "undefined") return;
     if (pathname === "/admin/login") return;
 
-    const isAdmin = localStorage.getItem("powergymAdmin") === "true";
+    const isLoginPage = pathname === "/admin/login";
+    const hasAdminAccess = localStorage.getItem("powergymAdmin") === "true";
 
-    const isAdmin = localStorage.getItem("powergymAdmin") === "true";
-    if (pathname === "/admin/login") {
-      if (isAdmin) {
-        router.replace("/admin/news");
-      }
+    if (isLoginPage && hasAdminAccess) {
+      router.replace("/admin/news");
       return;
     }
 
-    if (!isAdmin) {
+    if (!isLoginPage && !hasAdminAccess) {
       router.replace("/admin/login");
     }
   }, [pathname, router]);
