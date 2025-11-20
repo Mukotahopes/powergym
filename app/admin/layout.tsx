@@ -28,6 +28,7 @@ export default function AdminLayout({
     const isAdmin = localStorage.getItem("powergymAdmin") === "true";
 
 
+
   return (
     <div className="min-h-screen flex bg-[#F4F7F6] text-black">
       {/* Sidebar */}
