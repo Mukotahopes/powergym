@@ -21,23 +21,44 @@ type AppUser = {
     subscriptionUntil?: string | null;
   };
   
-
+  type BookingItem = {
+    id: string;
+    status: "active" | "cancelled" | "completed";
+    createdAt?: string;
+    training?: {
+      id: string;
+      title: string;
+      category?: string;
+      coachName?: string;
+    } | null;
+  };
+  type AiPlan = {
+    id: string;
+    text: string;
+    createdAt?: string;
+  };
+  
 // Дні тижня
 const weekDays = ["Пн.", "Вт.", "Ср.", "Чт.", "Пт.", "Сб.", "Нд."];
+
 
 // ======================
 //  КОМПОНЕНТ
 // ======================
 export default function ProfilePage() {
+    
   const router = useRouter();
-
   const [user, setUser] = useState<AppUser | null>(null);
   const [weeklyPoints, setWeeklyPoints] = useState<number[]>(Array(7).fill(0));
+  const [bookings, setBookings] = useState<BookingItem[]>([]);
+  const [aiPlan, setAiPlan] = useState<AiPlan | null>(null);
 
   // ======================
   //  useEffect
   // ======================
   useEffect(() => {
+
+    
     if (typeof window === "undefined") return;
 
     const stored = localStorage.getItem("powergymUser");
@@ -80,6 +101,60 @@ export default function ProfilePage() {
           setWeeklyPoints(stats.weeklyPoints);
         }
       });
+      // 4 — мої записи на тренування
+// 4 – мої записи на тренування
+fetch(`/api/bookings?userId=${localUser.id}`)
+  .then(async (res) => {
+    if (!res.ok) {
+      console.error("Bookings response not ok:", res.status);
+      return [];
+    }
+
+    const text = await res.text();
+
+    // якщо тіло порожнє – повертаємо пустий масив, щоб не ламати json()
+    if (!text) return [];
+
+    try {
+      return JSON.parse(text);
+    } catch (err) {
+      console.error("Cannot parse bookings JSON:", err, text);
+      return [];
+    }
+  })
+  .then((list: any[]) => {
+    const mapped: BookingItem[] = list.map((b) => ({
+      id: b.id,
+      status: b.status,
+      createdAt: b.createdAt,
+      training: b.training
+        ? {
+            id: b.training.id,
+            title: b.training.title,
+            category: b.training.category,
+            coachName: b.training.coachName,
+          }
+        : null,
+    }));
+    setBookings(mapped);
+  })
+  .catch((e) => console.error("Error fetching bookings:", e));
+
+// 5 — AI-план тренувань
+fetch(`/api/ai-plan?userId=${localUser.id}`)
+  .then((res) => res.json())
+  .then((data) => {
+    if (data && data.text) {
+      setAiPlan({
+        id: data.id,
+        text: data.text,
+        createdAt: data.createdAt,
+      });
+    }
+  })
+  .catch((e) => console.error("Error fetching AI plan:", e));
+
+
   }, [router]);
 
   if (!user) return null;
@@ -136,6 +211,32 @@ export default function ProfilePage() {
           <p className="text-center text-sm md:text-base text-slate-700">
             Привіт, {name}! Гарного тренування сьогодні 🙂
           </p>
+{/* ПАНЕЛЬ КОРИСТУВАЧА */}
+<div className="mt-6 rounded-3xl bg-white shadow-[0_18px_40px_rgba(0,0,0,0.15)] px-6 py-4 flex flex-col md:flex-row items-center gap-4">
+  <div className="flex items-center gap-3 w-full md:w-auto">
+    <div className="relative h-14 w-14 rounded-full overflow-hidden bg-slate-200">
+      <Image
+        src={user.avatar || "/img/default-avatar.png"}
+        alt={name}
+        fill
+        className="object-cover"
+      />
+    </div>
+    <div>
+      <p className="text-sm font-semibold">{name}</p>
+      <p className="text-xs text-slate-600">{user.email}</p>
+    </div>
+  </div>
+
+  <div className="flex-1 flex justify-end w-full">
+    <button
+      onClick={() => router.push("/trainings")}
+      className="rounded-full bg-[#8DD9BE] px-5 py-1.5 text-xs font-semibold text-black shadow hover:bg-[#7ACDAE]"
+    >
+      Відкрити список тренувань
+    </button>
+  </div>
+</div>
 
           {/* ===========================
              КАРТКА 1 — БАЛИ + ГРАФІК
@@ -259,6 +360,96 @@ export default function ProfilePage() {
               </div>
             </div>
           </div>
+{/* МОЇ ЗАПИСИ НА ТРЕНУВАННЯ */}
+<div className="mt-8 rounded-3xl bg-white shadow-[0_18px_40px_rgba(0,0,0,0.15)] px-6 py-5">
+  <h2 className="text-base md:text-lg font-extrabold mb-3">
+    Мої записи на тренування
+  </h2>
+
+  {bookings.length === 0 ? (
+    <p className="text-xs text-slate-600">
+      Ви ще не записувались на тренування. Відкрийте список тренувань і
+      оберіть те, що вам підходить.
+    </p>
+  ) : (
+    <ul className="space-y-2">
+      {bookings.map((b) => {
+        const date =
+          b.createdAt &&
+          new Date(b.createdAt).toLocaleString("uk-UA", {
+            day: "2-digit",
+            month: "2-digit",
+            year: "numeric",
+            hour: "2-digit",
+            minute: "2-digit",
+          });
+
+        const statusLabel =
+          b.status === "completed"
+            ? "Завершено"
+            : b.status === "cancelled"
+            ? "Скасовано"
+            : "Активний";
+
+        return (
+          <li
+            key={b.id}
+            className="flex flex-col md:flex-row md:items-center md:justify-between rounded-2xl bg-slate-50 px-3 py-2 text-xs"
+          >
+            <div>
+              <p className="font-semibold">
+                {b.training?.title || "Тренування"}
+              </p>
+              <p className="text-slate-600">
+                {b.training?.category}{" "}
+                {b.training?.coachName &&
+                  `• тренер: ${b.training.coachName}`}
+              </p>
+            </div>
+            <div className="mt-1 md:mt-0 text-right">
+              {date && (
+                <p className="text-[11px] text-slate-500 mb-0.5">{date}</p>
+              )}
+              <p className="text-[11px] font-semibold text-slate-700">
+                Статус: {statusLabel}
+              </p>
+            </div>
+          </li>
+        );
+      })}
+    </ul>
+  )}
+</div>
+{/* AI-план тренувань */}
+<div className="mt-6 rounded-3xl bg-white shadow-[0_18px_40px_rgba(0,0,0,0.15)] px-6 py-5">
+  <h2 className="text-base md:text-lg font-extrabold mb-3">
+    AI-план тренувань
+  </h2>
+
+  {!aiPlan ? (
+    <p className="text-xs text-slate-600">
+      Ви ще не зберігали AI-план. Створіть його на сторінці AI-тренера.
+    </p>
+  ) : (
+    <>
+      {aiPlan.createdAt && (
+        <p className="text-[11px] text-slate-500 mb-2">
+          Останнє оновлення:{" "}
+          {new Date(aiPlan.createdAt).toLocaleString("uk-UA", {
+            day: "2-digit",
+            month: "2-digit",
+            year: "numeric",
+            hour: "2-digit",
+            minute: "2-digit",
+          })}
+        </p>
+      )}
+      <div className="rounded-2xl bg-slate-50 px-3 py-3 text-xs whitespace-pre-wrap text-slate-800">
+        {aiPlan.text}
+      </div>
+    </>
+  )}
+</div>
 
         </section>
       </div>

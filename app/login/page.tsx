@@ -33,7 +33,11 @@ export default function LoginPage() {
 
       localStorage.setItem("powergymUser", JSON.stringify(data));
 
-      router.push("/profile");
+      if (data.role === "admin") {
+        router.push("/admin");       // адмін в адмінку
+      } else {
+        router.push("/profile");     // звичайний користувач в профіль
+      }
     } catch (err) {
       console.error(err);
       setError("Сталася помилка. Спробуйте ще раз.");

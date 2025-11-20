@@ -1,100 +1,92 @@
-import Image from "next/image";
+"use client";
 
-export type TrainingItem = {
-  _id?: string;
+import { useRouter } from "next/navigation";
+import Image from "next/image";
+import { useState } from "react";
+
+type TrainingCardProps = {
+  id: string;
   title: string;
   category: string;
-  level?: string;
-  durationMin?: number;
-  description?: string;
-  coach?: string;
-  rating?: number;
-  reviewsCount?: number;
-  image?: string;
+  coachName: string;
+  imageUrl: string;
 };
 
-const categoryLabels: Record<string, string> = {
-  cardio: "Кардіо",
-  functional: "Функціональні",
-  strength: "Силові",
-};
+export default function TrainingCard({
+  id,
+  title,
+  category,
+  coachName,
+  imageUrl,
+}: TrainingCardProps) {
+  const router = useRouter();
+  const [loading, setLoading] = useState(false);
+  const [message, setMessage] = useState<string | null>(null);
 
-const levelLabels: Record<string, string> = {
-  beginner: "Початковий рівень",
-  intermediate: "Середній рівень",
-  advanced: "Просунутий рівень",
-};
+  const handleBook = async () => {
+    setMessage(null);
 
-type Props = {
-  training: TrainingItem;
-};
+    if (typeof window === "undefined") return;
 
-export default function TrainingCard({ training }: Props) {
-  const {
-    title,
-    category,
-    level,
-    durationMin,
-    coach,
-    rating,
-    reviewsCount,
-    image,
-  } = training;
+    const stored = localStorage.getItem("powergymUser");
+    if (!stored) {
+      router.push("/login");
+      return;
+    }
 
-  const categoryLabel = categoryLabels[category] ?? "Тренування";
-  const levelLabel = level ? levelLabels[level] ?? level : undefined;
-  const ratingValue = typeof rating === "number" && rating > 0 ? rating : 4.9;
+    const user = JSON.parse(stored) as { id?: string };
+    if (!user.id) {
+      router.push("/login");
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const res = await fetch("/api/bookings", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ userId: user.id, trainingId: id }),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        setMessage(data?.error || "Не вдалося записатися на тренування");
+      } else {
+        setMessage("Ви успішно записані на тренування 🎉");
+      }
+    } catch (e) {
+      console.error(e);
+      setMessage("Сталася помилка. Спробуйте ще раз.");
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
-    <article className="flex w-full max-w-sm flex-col overflow-hidden rounded-3xl bg-white shadow-[0_18px_40px_rgba(0,0,0,0.15)]">
-      {/* Верхня частина з картинкою */}
-      <div className="relative h-52 w-full overflow-hidden">
-        <Image
-          src={image || "/img/hero-gym.jpg"}
-          alt={title}
-          fill
-          className="object-cover"
-          sizes="(max-width:768px) 100vw, 320px"
-        />
-
-        <div className="absolute left-4 top-4 rounded-full bg-black/60 px-4 py-1 text-xs font-medium text-white">
-          {categoryLabel}
-        </div>
+    <article className="rounded-3xl bg-white shadow-[0_18px_40px_rgba(0,0,0,0.15)] overflow-hidden flex flex-col">
+      <div className="relative h-40 w-full">
+        <Image src={imageUrl} alt={title} fill className="object-cover" />
       </div>
 
-      {/* Нижня частина */}
-      <div className="flex flex-1 flex-col gap-3 p-5">
-        <div>
-          <h3 className="text-lg font-semibold">{title}</h3>
-          <p className="mt-1 text-xs text-slate-500">
-            {levelLabel && <span>{levelLabel} • </span>}
-            {durationMin ? `${durationMin} хв` : "45 хв"}
-          </p>
-        </div>
+      <div className="px-4 py-3 flex-1 flex flex-col">
+        <h3 className="text-sm font-extrabold mb-1">{title}</h3>
+        <p className="text-[11px] text-slate-600 mb-1">{category}</p>
+        <p className="text-[11px] text-slate-700 mb-3">{coachName}</p>
 
-        {training.description && (
-          <p className="text-sm text-slate-700 line-clamp-3">
-            {training.description}
+        <button
+          disabled={loading}
+          onClick={handleBook}
+          className="mt-auto w-full rounded-full bg-[#8DD9BE] py-1.5 text-[11px] font-semibold text-black shadow hover:bg-[#7ACDAE] disabled:opacity-60"
+        >
+          {loading ? "Запис..." : "Записатись"}
+        </button>
+
+        {message && (
+          <p className="mt-1 text-[10px] text-center text-slate-600">
+            {message}
           </p>
         )}
-
-        <div className="mt-auto flex items-center justify-between">
-          <div className="flex flex-col">
-            <span className="text-sm font-semibold">
-              {coach || "Тренер залу PowerGYM"}
-            </span>
-            <span className="text-xs text-slate-500">
-              ⭐ {ratingValue.toFixed(1)}{" "}
-              {typeof reviewsCount === "number" &&
-                reviewsCount > 0 &&
-                `(${reviewsCount} відгуків)`}
-            </span>
-          </div>
-
-          <button className="rounded-full border border-black/10 px-4 py-2 text-xs font-semibold text-black shadow-sm transition hover:bg-[#8DD9BE] hover:text-black">
-            Записатись
-          </button>
-        </div>
       </div>
     </article>
   );

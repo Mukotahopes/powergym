@@ -10,6 +10,7 @@
     "format": "biome format --write"
   },
   "dependencies": {
+    "bcryptjs": "^3.0.3",
     "mongoose": "^8.19.2",
     "next": "^15.1.6",
     "next-auth": "^4.24.11",

@@ -1,37 +1,112 @@
 import { NextResponse } from "next/server";
 import { connectDB } from "@/lib/mongodb";
 import PersonalTraining from "@/models/PersonalTraining";
+import User from "@/models/User";
+import Trainer from "@/models/Trainer";
 
-// GET — всі тренування користувача
 export async function GET(req: Request) {
-  await connectDB();
+  try {
+    await connectDB();
 
-  const { searchParams } = new URL(req.url);
-  const userId = searchParams.get("userId");
+    const { searchParams } = new URL(req.url);
+    const userId = searchParams.get("userId");
 
-  if (!userId) {
-    return NextResponse.json({ error: "userId required" }, { status: 400 });
+    const query: any = {};
+    if (userId) query.user = userId;
+
+    const list = await PersonalTraining.find(query)
+      .populate("user", "name email")
+      .populate("trainer", "firstName lastName")
+      .sort({ date: 1 })
+      .lean();
+
+    const mapped = list.map((pt: any) => ({
+      id: String(pt._id),
+      title: pt.title,
+      plan: pt.plan,
+      date: pt.date,
+      status: pt.status,
+      user: pt.user
+        ? {
+            id: String(pt.user._id),
+            name: pt.user.name,
+            email: pt.user.email,
+          }
+        : null,
+      trainer: pt.trainer
+        ? {
+            id: String(pt.trainer._id),
+            name: `${pt.trainer.firstName} ${pt.trainer.lastName}`,
+          }
+        : null,
+    }));
+
+    return NextResponse.json(mapped, { status: 200 });
+  } catch (e) {
+    console.error("GET /api/personal-trainings error:", e);
+    return NextResponse.json(
+      { error: "Internal server error" },
+      { status: 500 }
+    );
   }
-
-  const sessions = await PersonalTraining.find({ userId }).sort({ date: 1 }).lean();
-
-  return NextResponse.json(sessions);
 }
 
-// POST — адмін створює тренування
 export async function POST(req: Request) {
-  await connectDB();
+  try {
+    await connectDB();
 
-  const body = await req.json();
-  const { userId, trainerId, date, type, comment } = body;
+    const body = (await req.json()) as {
+      userEmail?: string;
+      trainerId?: string;
+      title?: string;
+      plan?: string;
+      date?: string; // ISO
+    };
 
-  const session = await PersonalTraining.create({
-    userId,
-    trainerId,
-    date,
-    type,
-    comment,
-  });
+    const { userEmail, trainerId, title, plan, date } = body;
 
-  return NextResponse.json(session, { status: 201 });
+    if (!userEmail || !trainerId || !title || !plan || !date) {
+      return NextResponse.json(
+        { error: "Вкажіть email користувача, тренера, назву, план і дату" },
+        { status: 400 }
+      );
+    }
+
+    const user = await User.findOne({ email: userEmail }).lean();
+    if (!user) {
+      return NextResponse.json(
+        { error: "Користувача з таким email не знайдено" },
+        { status: 404 }
+      );
+    }
+
+    const trainer = await Trainer.findById(trainerId).lean();
+    if (!trainer) {
+      return NextResponse.json(
+        { error: "Тренера не знайдено" },
+        { status: 404 }
+      );
+    }
+
+    const created = await PersonalTraining.create({
+      user: (user as any)._id,
+      trainer: trainerId,
+      title,
+      plan,
+      date: new Date(date),
+    });
+
+    return NextResponse.json(
+      {
+        id: created._id.toString(),
+      },
+      { status: 201 }
+    );
+  } catch (e) {
+    console.error("POST /api/personal-trainings error:", e);
+    return NextResponse.json(
+      { error: "Internal server error" },
+      { status: 500 }
+    );
+  }
 }

@@ -1,15 +1,18 @@
-import { Schema, model, models } from "mongoose";
+import mongoose, { Schema, model, models } from "mongoose";
 
 const PersonalTrainingSchema = new Schema(
   {
-    userId: { type: String, required: true },
-    trainerId: { type: String, required: true },
+    user: { type: Schema.Types.ObjectId, ref: "User", required: true },
+    trainer: { type: Schema.Types.ObjectId, ref: "Trainer", required: true },
+    title: { type: String, required: true },
+    plan: { type: String, required: true },
     date: { type: Date, required: true },
-    type: { type: String, required: true }, // наприклад: "кардіо", "силове", "функціональне"
-    comment: { type: String },
-    status: { type: String, default: "scheduled" }, // scheduled, done, canceled
+    status: { type: String, default: "planned" }, // planned / done / cancelled
   },
   { timestamps: true }
 );
 
-export default models.PersonalTraining || model("PersonalTraining", PersonalTrainingSchema);
+const PersonalTraining =
+  models.PersonalTraining || model("PersonalTraining", PersonalTrainingSchema);
+
+export default PersonalTraining;
