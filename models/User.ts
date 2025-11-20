@@ -13,6 +13,15 @@ const UserSchema = new Schema(
     },
 
     points: { type: Number, default: 0 },
+    subscription: {
+      type: String,
+      enum: ["free", "plus", "premium"],
+      default: "free",
+    },
+    subscriptionUntil: {
+      type: Date,
+      default: null,
+    }
   },
   { timestamps: true }
 );
