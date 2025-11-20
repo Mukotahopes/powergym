@@ -13,11 +13,18 @@ type ContactMessage = {
 export default function AdminMessagesPage() {
   const [messages, setMessages] = useState<ContactMessage[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    fetch("/api/contacts")
+    setError(null);
+
+    fetch("/api/contact-messages")
       .then(async (res) => {
-        if (!res.ok) return [];
+        if (!res.ok) {
+          const body = await res.json().catch(() => ({}));
+          const message = body.error || "Не вдалося завантажити повідомлення";
+          throw new Error(message);
+        }
         return res.json();
       })
       .then((list: any[]) => {
@@ -30,18 +37,23 @@ export default function AdminMessagesPage() {
         }));
         setMessages(mapped);
       })
-      .catch((e) => console.error("Error fetching messages:", e))
+      .catch((e) => {
+        console.error("Error fetching messages:", e);
+        setError(e.message || "Сталася помилка при завантаженні");
+      })
       .finally(() => setLoading(false));
   }, []);
 
   return (
     <div className="max-w-5xl mx-auto">
-      <h1 className="text-xl md:text-2xl font-extrabold mb-4">
-        Повідомлення з форми контактів
-      </h1>
+      <h1 className="text-xl md:text-2xl font-extrabold mb-4">Повідомлення</h1>
 
       {loading ? (
         <p className="text-sm text-slate-600">Завантаження повідомлень...</p>
+      ) : error ? (
+        <p className="text-sm text-red-600 bg-red-50 rounded-xl px-3 py-2 inline-block">
+          {error}
+        </p>
       ) : messages.length === 0 ? (
         <p className="text-sm text-slate-600">
           Повідомлень від клієнтів поки немає.
