@@ -9,6 +9,7 @@ const links = [
   { href: "/admin/trainers", label: "Тренери" },
   { href: "/admin/news", label: "Новини" },
   { href: "/admin/messages", label: "Повідомлення" },
+  { href: "/admin/clients", label: "Клієнти" },
   { href: "/admin/personal-trainings", label: "Персональні тренування" },
 ];
 
@@ -21,25 +22,28 @@ export default function AdminLayout({
   const router = useRouter();
 
   useEffect(() => {
-    // Проста перевірка ролі з localStorage
     if (typeof window === "undefined") return;
 
-    const stored = localStorage.getItem("powergymUser");
-    if (!stored) {
-      router.replace("/login");
+    const isAdmin = localStorage.getItem("powergymAdmin") === "true";
+    if (pathname === "/admin/login") {
+      if (isAdmin) {
+        router.replace("/admin/news");
+      }
       return;
     }
 
-    try {
-      const user = JSON.parse(stored);
-      if (user.role !== "admin") {
-        router.replace("/");
-      }
-    } catch (e) {
-      console.error("Cannot parse powergymUser:", e);
-      router.replace("/login");
+    if (!isAdmin) {
+      router.replace("/admin/login");
     }
-  }, [router]);
+  }, [pathname, router]);
+
+  if (pathname === "/admin/login") {
+    return (
+      <div className="min-h-screen bg-[#F4F7F6] flex items-center justify-center px-4 py-12">
+        <main className="w-full max-w-2xl">{children}</main>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen flex bg-[#F4F7F6] text-black">
@@ -59,21 +63,17 @@ export default function AdminLayout({
               <Link
                 key={link.href}
                 href={link.href}
-                className={`block rounded-full px-4 py-2 text-sm transition ${
+                className={
                   active
-                    ? "bg-[#8DD9BE] text-black font-semibold"
-                    : "text-white/80 hover:bg-white/10"
-                }`}
+                    ? "block rounded-full px-4 py-2 text-sm transition bg-[#8DD9BE] text-black font-semibold"
+                    : "block rounded-full px-4 py-2 text-sm transition text-white/80 hover:bg-white/10"
+                }
               >
                 {link.label}
               </Link>
             );
           })}
         </nav>
-
-        <div className="px-4 py-3 border-t border-white/10 text-[11px] text-white/50">
-          © {new Date().getFullYear()} PowerGYM
-        </div>
       </aside>
 
       {/* Main */}
