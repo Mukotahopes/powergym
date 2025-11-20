@@ -23,27 +23,10 @@ export default function AdminLayout({
 
   useEffect(() => {
     if (typeof window === "undefined") return;
+    if (pathname === "/admin/login") return;
 
     const isAdmin = localStorage.getItem("powergymAdmin") === "true";
-    if (pathname === "/admin/login") {
-      if (isAdmin) {
-        router.replace("/admin/news");
-      }
-      return;
-    }
 
-    if (!isAdmin) {
-      router.replace("/admin/login");
-    }
-  }, [pathname, router]);
-
-  if (pathname === "/admin/login") {
-    return (
-      <div className="min-h-screen bg-[#F4F7F6] flex items-center justify-center px-4 py-12">
-        <main className="w-full max-w-2xl">{children}</main>
-      </div>
-    );
-  }
 
   return (
     <div className="min-h-screen flex bg-[#F4F7F6] text-black">
