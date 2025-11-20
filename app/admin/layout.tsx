@@ -9,6 +9,7 @@ const links = [
   { href: "/admin/trainers", label: "Тренери" },
   { href: "/admin/news", label: "Новини" },
   { href: "/admin/messages", label: "Повідомлення" },
+  { href: "/admin/clients", label: "Клієнти" },
   { href: "/admin/personal-trainings", label: "Персональні тренування" },
 ];
 
