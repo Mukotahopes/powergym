@@ -3,12 +3,20 @@ import { connectDB } from "@/lib/mongodb";
 import Training from "@/models/Training";
 import Trainer from "@/models/Trainer";
 
+function slugify(text: string) {
+  return text
+    .toString()
+    .toLowerCase()
+    .trim()
+    .replace(/[\s\W-]+/g, "-");
+}
+
 export async function GET() {
   await connectDB();
 
   const trainings = await Training.find()
     .populate("trainer")
-    .sort({ createdAt: -1 })
+    .sort({ startAt: 1, createdAt: -1 })
     .lean();
 
   return NextResponse.json(trainings);
@@ -25,17 +33,16 @@ export async function POST(request: Request) {
     level,
     durationMin,
     description,
-    trainerId, // важливо!
+    trainerId,
+    image,
+    startAt,
+    minSubscription,
   } = body;
 
   if (!title) {
-    return NextResponse.json(
-      { error: "Поле title обовʼязкове" },
-      { status: 400 }
-    );
+    return NextResponse.json({ error: "Title is required" }, { status: 400 });
   }
 
-  // тренер — додатково
   let coachName: string | undefined = undefined;
 
   if (trainerId) {
@@ -54,11 +61,14 @@ export async function POST(request: Request) {
     level,
     durationMin: Number(durationMin),
     description,
+    image,
+    startAt: startAt ? new Date(startAt) : undefined,
+    minSubscription: minSubscription || "free",
     trainer: trainerId || undefined,
     coach: coachName,
+    slug: slugify(title),
   });
 
-  // populate тренера після створення
   const populated = await training.populate("trainer");
 
   return NextResponse.json(populated, { status: 201 });

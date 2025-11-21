@@ -14,39 +14,38 @@ export async function GET(req: Request) {
     const userId = searchParams.get("userId");
 
     if (!userId) {
-      return NextResponse.json(
-        { error: "Missing userId" },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: "Missing userId" }, { status: 400 });
     }
 
     const bookings = await Booking.find({ user: userId })
-      .populate("training", "title category coachName")
+      .populate("training", "title category coach startAt minSubscription image")
       .sort({ createdAt: -1 })
       .lean();
 
-    const mapped = bookings.map((b: any) => ({
-      id: String(b._id),
-      status: b.status,
-      createdAt: b.createdAt,
-      training: b.training
-        ? {
-            id: String(b.training._id),
-            title: b.training.title,
-            category: b.training.category,
-            coachName: b.training.coachName,
-          }
-        : null,
-    }));
+    const now = Date.now();
+    const mapped = bookings
+      .filter((b: any) => b.training && (!b.training.startAt || new Date(b.training.startAt).getTime() >= now))
+      .map((b: any) => ({
+        id: String(b._id),
+        status: b.status,
+        createdAt: b.createdAt,
+        training: b.training
+          ? {
+              id: String(b.training._id),
+              title: b.training.title,
+              category: b.training.category,
+              coachName: b.training.coach,
+              startAt: b.training.startAt,
+              minSubscription: b.training.minSubscription,
+              image: b.training.image,
+            }
+          : null,
+      }));
 
-    // навіть якщо немає записів – повертаємо []
     return NextResponse.json(mapped, { status: 200 });
   } catch (e) {
     console.error("GET /api/bookings error:", e);
-    return NextResponse.json(
-      { error: "Internal server error" },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
 }
 
@@ -77,16 +76,12 @@ export async function POST(req: Request) {
     }
 
     const userSub = (user as any).subscription as PlanId | undefined;
+    const minRequired = ((training as any).minSubscription ?? "free") as PlanId;
+    const order: Record<PlanId, number> = { free: 0, plus: 1, premium: 2 };
 
-    const allowed = ((training as any).allowedSubscriptions ??
-      ["free", "plus", "premium"]) as PlanId[];
-
-    if (userSub && !allowed.includes(userSub)) {
+    if (userSub && order[userSub] < order[minRequired]) {
       return NextResponse.json(
-        {
-          error:
-            "Ваш абонемент не дозволяє записуватись на це тренування",
-        },
+        { error: "Ваш абонемент не дозволяє запис на це тренування" },
         { status: 403 }
       );
     }
@@ -105,9 +100,6 @@ export async function POST(req: Request) {
     );
   } catch (e) {
     console.error("POST /api/bookings error:", e);
-    return NextResponse.json(
-      { error: "Internal server error" },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
 }

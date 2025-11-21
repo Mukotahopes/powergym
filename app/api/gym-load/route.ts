@@ -1,26 +1,33 @@
 import { NextResponse } from "next/server";
 import { connectDB } from "@/lib/mongodb";
-import Booking from "@/models/Booking";
+import GymLoad from "@/models/GymLoad";
 
-// Дуже проста логіка: кількість "активних" бронювань ≈ людей у залі.
-// Потім зможеш замінити на справжні турнікети / чекин.
 export async function GET() {
   try {
     await connectDB();
-
-    const count = await Booking.countDocuments({ status: "active" });
-
-    return NextResponse.json(
-      {
-        count, // скільки людей зараз у залі
-      },
-      { status: 200 }
-    );
+    const doc = await GymLoad.findOne().sort({ updatedAt: -1 }).lean();
+    return NextResponse.json({ count: doc?.count ?? 0 }, { status: 200 });
   } catch (e) {
     console.error("GET /api/gym-load error:", e);
-    return NextResponse.json(
-      { error: "Internal server error" },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+  }
+}
+
+export async function PATCH(request: Request) {
+  try {
+    await connectDB();
+    const { count } = (await request.json()) as { count?: number };
+    const safeCount = Number(count) || 0;
+
+    const updated = await GymLoad.findOneAndUpdate(
+      {},
+      { count: safeCount },
+      { new: true, upsert: true }
+    ).lean();
+
+    return NextResponse.json({ count: updated?.count ?? safeCount }, { status: 200 });
+  } catch (e) {
+    console.error("PATCH /api/gym-load error:", e);
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
 }

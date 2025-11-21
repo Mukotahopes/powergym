@@ -19,17 +19,23 @@ const TrainingSchema = new Schema(
     durationMin: { type: Number, default: 45 },
     description: { type: String },
 
-    // рейтинг конкретного тренування (може знадобитись пізніше)
     rating: { type: Number, default: 0 },
-
-    // запасне текстове поле, якщо колись було без Trainer
+    // Optional start date/time of the training
+    startAt: { type: Date },
     coach: { type: String },
-
-    // посилання на тренера
+    slug: { type: String, unique: true, sparse: true },
+    minSubscription: {
+      type: String,
+      enum: ["free", "plus", "premium"],
+      default: "free",
+    },
     trainer: {
       type: Schema.Types.ObjectId,
       ref: "Trainer",
     },
+
+    // Cover image for the training card
+    image: { type: String },
   },
   { timestamps: true }
 );
