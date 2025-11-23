@@ -1,6 +1,5 @@
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
-import { Reviews } from "@/components/Reviews";
 import TrainingListClient from "./TrainingListClient";
 
 type Training = {
@@ -45,8 +44,6 @@ export default async function TrainingsPage() {
         <section className="mx-auto max-w-6xl px-4 pb-12">
           <TrainingListClient trainings={trainings} />
         </section>
-
-        <Reviews />
       </div>
 
       <Footer />

@@ -5,7 +5,6 @@ import NewsCard from "@/components/NewsCard";
 import NewsSection, { NewsItem } from "@/components/NewsSection";
 import Footer from "@/components/Footer";
 import { Hero } from "@/components/Hero";
-import { Reviews } from "@/components/Reviews";
 
 async function getNews(): Promise<NewsItem[]> {
   const res = await fetch("http://localhost:3000/api/news", { cache: "no-store" });
