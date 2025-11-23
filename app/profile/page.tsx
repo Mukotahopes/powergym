@@ -32,11 +32,19 @@ type AppUser = {
       coachName?: string;
     } | null;
   };
-  type AiPlan = {
-    id: string;
-    text: string;
-    createdAt?: string;
-  };
+type AiPlan = {
+  id: string;
+  text: string;
+  createdAt?: string;
+};
+type PersonalTrainingItem = {
+  id: string;
+  title?: string;
+  plan?: string;
+  date?: string;
+  status?: string;
+  trainer?: { id?: string; name?: string } | null;
+};
   
 // Дні тижня
 const weekDays = ["Пн.", "Вт.", "Ср.", "Чт.", "Пт.", "Сб.", "Нд."];
@@ -52,6 +60,8 @@ export default function ProfilePage() {
   const [weeklyPoints, setWeeklyPoints] = useState<number[]>(Array(7).fill(0));
   const [bookings, setBookings] = useState<BookingItem[]>([]);
   const [aiPlan, setAiPlan] = useState<AiPlan | null>(null);
+  const [personalTrainings, setPersonalTrainings] = useState<PersonalTrainingItem[]>([]);
+  const [selectedTraining, setSelectedTraining] = useState<PersonalTrainingItem | null>(null);
 
   // ======================
   //  useEffect
@@ -154,6 +164,25 @@ fetch(`/api/ai-plan?userId=${localUser.id}`)
   })
   .catch((e) => console.error("Error fetching AI plan:", e));
 
+// 6 — персональні тренування
+fetch(`/api/personal-trainings?userId=${localUser.id}`)
+  .then((res) => res.json())
+  .then((list: any[]) => {
+    if (!Array.isArray(list)) return;
+    const mapped: PersonalTrainingItem[] = list.map((pt) => ({
+      id: pt.id,
+      title: pt.title,
+      plan: pt.plan,
+      date: pt.date,
+      status: pt.status,
+      trainer: pt.trainer
+        ? { id: pt.trainer.id, name: pt.trainer.name }
+        : null,
+    }));
+    setPersonalTrainings(mapped);
+  })
+  .catch((e) => console.error("Error fetching personal trainings:", e));
+
 
   }, [router]);
 
@@ -198,19 +227,20 @@ fetch(`/api/ai-plan?userId=${localUser.id}`)
   const handleBuySubscription = () => router.push("/subscriptions");
 
   return (
-    <main className="min-h-screen bg-[#F4F7F6] text-black flex flex-col">
-      <Navbar />
+    <>
+      <main className="min-h-screen bg-[#F4F7F6] text-black flex flex-col">
+        <Navbar />
 
-      <div className="flex-1">
-        <section className="mx-auto max-w-5xl px-4 py-8">
+        <div className="flex-1">
+          <section className="mx-auto max-w-5xl px-4 py-8">
 
-          {/* Заголовок */}
-          <h1 className="text-center text-3xl md:text-4xl font-extrabold mb-2">
-            Особистий кабінет
-          </h1>
-          <p className="text-center text-sm md:text-base text-slate-700">
-            Привіт, {name}! Гарного тренування сьогодні 🙂
-          </p>
+            {/* Заголовок */}
+            <h1 className="text-center text-3xl md:text-4xl font-extrabold mb-2">
+              Особистий кабінет
+            </h1>
+            <p className="text-center text-sm md:text-base text-slate-700">
+              Привіт, {name}! Гарного тренування сьогодні 🙂
+            </p>
 {/* ПАНЕЛЬ КОРИСТУВАЧА */}
 <div className="mt-6 rounded-3xl bg-white shadow-[0_18px_40px_rgba(0,0,0,0.15)] px-6 py-4 flex flex-col md:flex-row items-center gap-4">
   <div className="flex items-center gap-3 w-full md:w-auto">
@@ -238,50 +268,48 @@ fetch(`/api/ai-plan?userId=${localUser.id}`)
   </div>
 </div>
 
-          {/* ===========================
-             КАРТКА 1 — БАЛИ + ГРАФІК
-          ============================ */}
-          <div className="mt-8 rounded-3xl bg-white shadow-xl px-6 py-5 flex flex-col md:flex-row gap-6">
-            <div className="flex flex-col items-center w-full md:w-1/3">
-              <div className="text-3xl mb-1">🏋️‍♂️</div>
-              <p className="text-4xl font-extrabold">{points}</p>
-              <p className="text-sm text-slate-700 mt-1">
-                Цього тижня {hasAnyWeeklyPoints ? "" : "ще"} 0 балів
-              </p>
-            </div>
+            {/* ===========================
+               КАРТКА 1 — БАЛИ + ГРАФІК
+            ============================ */}
+            <div className="mt-8 rounded-3xl bg-white shadow-xl px-6 py-5 flex flex-col md:flex-row gap-6">
+              <div className="flex flex-col items-center w-full md:w-1/3">
+                <div className="text-3xl mb-1">🏋️‍♂️</div>
+                <p className="text-4xl font-extrabold">{points}</p>
+                <p className="text-sm text-slate-700 mt-1">
+                  Цього тижня {hasAnyWeeklyPoints ? "" : "ще"} 0 балів
+                </p>
+              </div>
 
-            <div className="w-full md:w-2/3">
-              {!hasAnyWeeklyPoints ? (
-                <div className="flex h-40 items-center justify-center text-xs text-slate-500">
-                  За цей тиждень ще не нараховано балів
-                </div>
-              ) : (
-                <div className="flex items-end justify-between h-40 px-3">
-                  {weeklyPoints.map((v, idx) => (
-                    <div key={idx} className="flex flex-col items-center">
-                      <div className="h-28 flex items-end">
+              <div className="w-full md:w-2/3">
+                {!hasAnyWeeklyPoints ? (
+                  <div className="flex h-40 items-center justify-center text-xs text-slate-500">
+                    За цей тиждень ще не нараховано балів
+                  </div>
+                ) : (
+                  <div className="flex items-end justify-between h-40 px-3">
+                    {weeklyPoints.map((v, idx) => (
+                      <div key={idx} className="flex flex-col items-center">
                         <div
                           className="w-6 rounded-t-lg bg-[#8DD9BE]"
                           style={{ height: `${(v / maxWeekly) * 100}%` }}
                         />
+                        <span className="text-[10px] text-slate-700">
+                          {weekDays[idx]}
+                        </span>
                       </div>
-                      <span className="text-[10px] text-slate-700">
-                        {weekDays[idx]}
-                      </span>
-                    </div>
-                  ))}
-                </div>
-              )}
+                    ))}
+                  </div>
+                )}
+              </div>
             </div>
-          </div>
 
-          {/* ===========================
-             КАРТКА 2 — АБОНЕМЕНТ
-          ============================ */}
-          <div className="mt-6 rounded-3xl bg-white shadow-xl px-6 py-5 flex flex-col md:flex-row gap-6">
-            <div className="flex flex-col w-full md:w-1/2">
-              <div className="text-3xl mb-1">💲</div>
-              <p className="text-2xl md:text-3xl font-extrabold">
+            {/* ===========================
+               КАРТКА 2 — АБОНЕМЕНТ
+            ============================ */}
+            <div className="mt-6 rounded-3xl bg-white shadow-xl px-6 py-5 flex flex-col md:flex-row gap-6">
+              <div className="flex flex-col w-full md:w-1/2">
+                <div className="text-3xl mb-1">💲</div>
+                <p className="text-2xl md:text-3xl font-extrabold">
   {subscriptionInfo.label}
 </p>
 <p className="mt-1 text-sm text-slate-700">
@@ -295,71 +323,71 @@ fetch(`/api/ai-plan?userId=${localUser.id}`)
 </p>
 
 
-              <button
-                onClick={handleBuySubscription}
-                className="mt-4 w-fit rounded-full bg-[#8DD9BE] px-5 py-1.5 text-xs font-semibold text-black"
-              >
-                Купити / змінити абонемент
-              </button>
-            </div>
+                <button
+                  onClick={handleBuySubscription}
+                  className="mt-4 w-fit rounded-full bg-[#8DD9BE] px-5 py-1.5 text-xs font-semibold text-black"
+                >
+                  Купити / змінити абонемент
+                </button>
+              </div>
 
 <div className="w-full md:w-1/2 flex justify-center">
-              <div className="relative h-40 w-full max-w-xs rounded-2xl overflow-hidden shadow-lg">
-                {/* Картинка */}
-                <Image
-                  src="/img/hero-gym.jpg"
-                  alt="sub"
-                  fill
-                  className="object-cover"
-                />
+                <div className="relative h-40 w-full max-w-xs rounded-2xl overflow-hidden shadow-lg">
+                  {/* Картинка */}
+                  <Image
+                    src="/img/hero-gym.jpg"
+                    alt="sub"
+                    fill
+                    className="object-cover"
+                  />
 
-                {/* Темний градієнт зверху для читабельності тексту */}
-                <div className="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent" />
+                  {/* Темний градієнт зверху для читабельності тексту */}
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent" />
 
-                {/* Текст зверху зліва */}
-                <div className="absolute left-3 top-3 text-xs font-semibold text-white">
-                  {subscriptionInfo.isActive ? subscriptionInfo.label : "Повний доступ"}
-                  {subscriptionInfo.isActive && subscriptionUntil && (
-                    <div className="text-[10px] text-slate-200">
-                      Дійсний до{" "}
-                      {subscriptionUntil.toLocaleDateString("uk-UA", {
-                        day: "numeric",
-                        month: "long",
-                        year: "numeric",
-                      })}
+                  {/* Текст зверху зліва */}
+                  <div className="absolute left-3 top-3 text-xs font-semibold text-white">
+                    {subscriptionInfo.isActive ? subscriptionInfo.label : "Повний доступ"}
+                    {subscriptionInfo.isActive && subscriptionUntil && (
+                      <div className="text-[10px] text-slate-200">
+                        Дійсний до{" "}
+                        {subscriptionUntil.toLocaleDateString("uk-UA", {
+                          day: "numeric",
+                          month: "long",
+                          year: "numeric",
+                        })}
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Ціна знизу справа */}
+                  {subscriptionInfo.price && (
+                    <div className="absolute right-3 bottom-3 text-sm font-bold text-white">
+                      {subscriptionInfo.price}
                     </div>
                   )}
                 </div>
+              </div>
 
-                {/* Ціна знизу справа */}
-                {subscriptionInfo.price && (
-                  <div className="absolute right-3 bottom-3 text-sm font-bold text-white">
-                    {subscriptionInfo.price}
-                  </div>
-                )}
+            </div>
+
+            {/* ===========================
+               КАРТКА 3 — РЕЙТИНГ
+            ============================ */}
+            <div className="mt-6 rounded-3xl bg-white shadow-xl px-6 py-5 flex flex-col md:flex-row gap-6">
+              <div className="flex flex-col items-center w-full md:w-1/2">
+                <div className="text-3xl mb-1">🏅</div>
+                <p className="text-3xl font-extrabold">{rank}</p>
+                <p className="text-sm text-slate-700 mt-1">
+                  Твоє місце: {rank} з {totalUsers} учасників
+                </p>
+              </div>
+
+              <div className="w-full md:w-1/2 flex items-center justify-center">
+                <div className="flex h-28 w-full max-w-xs items-center justify-center rounded-2xl bg-slate-50 border border-dashed text-sm text-slate-500">
+                  Рейтинг серед усіх користувачів
+                </div>
               </div>
             </div>
-
-          </div>
-
-          {/* ===========================
-             КАРТКА 3 — РЕЙТИНГ
-          ============================ */}
-          <div className="mt-6 rounded-3xl bg-white shadow-xl px-6 py-5 flex flex-col md:flex-row gap-6">
-            <div className="flex flex-col items-center w-full md:w-1/2">
-              <div className="text-3xl mb-1">🏅</div>
-              <p className="text-3xl font-extrabold">{rank}</p>
-              <p className="text-sm text-slate-700 mt-1">
-                Твоє місце: {rank} з {totalUsers} учасників
-              </p>
-            </div>
-
-            <div className="w-full md:w-1/2 flex items-center justify-center">
-              <div className="flex h-28 w-full max-w-xs items-center justify-center rounded-2xl bg-slate-50 border border-dashed text-sm text-slate-500">
-                Рейтинг серед усіх користувачів
-              </div>
-            </div>
-          </div>
 {/* МОЇ ЗАПИСИ НА ТРЕНУВАННЯ */}
 <div className="mt-8 rounded-3xl bg-white shadow-[0_18px_40px_rgba(0,0,0,0.15)] px-6 py-5">
   <h2 className="text-base md:text-lg font-extrabold mb-3">
@@ -420,6 +448,71 @@ fetch(`/api/ai-plan?userId=${localUser.id}`)
     </ul>
   )}
 </div>
+{/* ПЕРСОНАЛЬНІ ТРЕНУВАННЯ */}
+<div className="mt-6 rounded-3xl bg-white shadow-[0_18px_40px_rgba(0,0,0,0.15)] px-6 py-5">
+  <h2 className="text-base md:text-lg font-extrabold mb-3">
+    Персональні тренування
+  </h2>
+
+  {personalTrainings.length === 0 ? (
+    <p className="text-xs text-slate-600">
+      Персональних тренувань поки немає. Запишіться у тренера, щоб побачити їх тут.
+    </p>
+  ) : (
+    <ul className="space-y-2">
+      {personalTrainings.map((pt) => {
+        const dateStr =
+          pt.date &&
+          new Date(pt.date).toLocaleString("uk-UA", {
+            day: "2-digit",
+            month: "2-digit",
+            year: "numeric",
+            hour: "2-digit",
+            minute: "2-digit",
+          });
+
+        const statusLabel =
+          pt.status === "done"
+            ? "Завершено"
+            : pt.status === "cancelled"
+            ? "Скасовано"
+            : "Заплановано";
+        const planText = pt.plan ? ` • План: ${pt.plan}` : "";
+
+        return (
+          <li
+            key={pt.id}
+            className="flex flex-col md:flex-row md:items-center md:justify-between rounded-2xl bg-slate-50 px-3 py-2 text-xs"
+          >
+            <div className="space-y-0.5">
+              <p className="font-semibold">
+                {pt.title || "Персональне тренування"}
+              </p>
+              <p className="text-slate-600">
+                {pt.trainer?.name && `Тренер: ${pt.trainer.name}`}
+                {planText}
+              </p>
+            </div>
+            <div className="mt-1 md:mt-0 text-right space-y-1">
+              {dateStr && (
+                <p className="text-[11px] text-slate-500 mb-0.5">{dateStr}</p>
+              )}
+              <p className="text-[11px] font-semibold text-slate-700">
+                Статус: {statusLabel}
+              </p>
+              <button
+                onClick={() => setSelectedTraining(pt)}
+                className="inline-block rounded-full border border-slate-300 px-3 py-1 text-[11px] font-semibold text-slate-700 hover:bg-slate-100"
+              >
+                Переглянути
+              </button>
+            </div>
+          </li>
+        );
+      })}
+    </ul>
+  )}
+</div>
 {/* AI-план тренувань */}
 <div className="mt-6 rounded-3xl bg-white shadow-[0_18px_40px_rgba(0,0,0,0.15)] px-6 py-5">
   <h2 className="text-base md:text-lg font-extrabold mb-3">
@@ -451,10 +544,65 @@ fetch(`/api/ai-plan?userId=${localUser.id}`)
   )}
 </div>
 
-        </section>
-      </div>
+          </section>
+        </div>
 
-      <Footer />
-    </main>
+        <Footer />
+      </main>
+
+      {selectedTraining && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 px-4">
+          <div className="w-full max-w-md rounded-2xl bg-white p-5 shadow-2xl">
+            <div className="flex items-start justify-between gap-3">
+              <div>
+                <p className="text-xs uppercase tracking-wide text-slate-500">Персональне тренування</p>
+                <h3 className="text-lg font-extrabold mt-1">
+                  {selectedTraining.title || "Персональне тренування"}
+                </h3>
+              </div>
+              <button
+                onClick={() => setSelectedTraining(null)}
+                className="rounded-full bg-slate-100 px-2 py-1 text-xs font-semibold text-slate-700 hover:bg-slate-200"
+              >
+                Закрити
+              </button>
+            </div>
+
+            <div className="mt-4 space-y-2 text-sm text-slate-700">
+              {selectedTraining.date && (
+                <p>
+                  <span className="font-semibold">Дата:</span>{" "}
+                  {new Date(selectedTraining.date).toLocaleString("uk-UA", {
+                    day: "2-digit",
+                    month: "2-digit",
+                    year: "numeric",
+                    hour: "2-digit",
+                    minute: "2-digit",
+                  })}
+                </p>
+              )}
+              {selectedTraining.trainer?.name && (
+                <p>
+                  <span className="font-semibold">Тренер:</span> {selectedTraining.trainer.name}
+                </p>
+              )}
+              {selectedTraining.plan && (
+                <p>
+                  <span className="font-semibold">План:</span> {selectedTraining.plan}
+                </p>
+              )}
+              <p>
+                <span className="font-semibold">Статус:</span>{" "}
+                {selectedTraining.status === "done"
+                  ? "Завершено"
+                  : selectedTraining.status === "cancelled"
+                  ? "Скасовано"
+                  : "Заплановано"}
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
+    </>
   );
 }
